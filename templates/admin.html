@@ -23,6 +23,70 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Program Management Section -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Program Management</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form action="{{ url_for('add_program') }}" method="post" class="mb-3">
+                                            <div class="input-group">
+                                                <input type="text" name="program_name" class="form-control" placeholder="Enter new program name" required>
+                                                <div class="input-group-append">
+                                                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add Program</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                        
+                                        <h6>Available Programs:</h6>
+                                        <ul class="list-group">
+                                            {% for program in programs %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    {{ program }}
+                                                </li>
+                                            {% else %}
+                                                <li class="list-group-item text-muted">No programs available</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0"><i class="fas fa-download"></i> Download Attendance Records</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>Download attendance records filtered by program:</p>
+                                        <div class="list-group">
+                                            <a href="{{ url_for('download_attendance') }}" class="list-group-item list-group-item-action">
+                                                <i class="fas fa-file-csv"></i> All Programs
+                                            </a>
+                                            {% for program in unique_programs %}
+                                                <a href="{{ url_for('download_attendance', program=program) }}" class="list-group-item list-group-item-action">
+                                                    <i class="fas fa-file-csv"></i> {{ program }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
                         {% if attendance_records %}
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover attendance-table">

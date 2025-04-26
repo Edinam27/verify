@@ -1,0 +1,36 @@
+# .github/workflows/deploy.yml
+
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - app  # or whatever your production branch is called
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'  # or whatever version your app needs
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Deploy to Render
+      env:
+        RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      run: |
+        curl -X POST \
+          -H "Accept: application/json" \
+          -H "Authorization: Bearer $RENDER_API_KEY" \
+          -d '' \
+          https://api.render.com/v1/services/SERVICE_ID/deploys

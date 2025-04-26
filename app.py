@@ -213,6 +213,5 @@ def admin():
     return render_template('admin.html', attendance_records=attendance_records)
 
 if __name__ == '__main__':
-    # Create upload folder if it doesn't exist
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True, port=5004)
+    port = int(os.environ.get('PORT', 5000))  # Render will give a PORT env var
+    app.run(host='0.0.0.0', port=port)

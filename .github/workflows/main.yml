@@ -5,7 +5,7 @@ name: Deploy to Render
 on:
   push:
     branches:
-      - app  # or whatever your production branch is called
+      - main  # or whatever your production branch is called
 
 jobs:
   deploy:

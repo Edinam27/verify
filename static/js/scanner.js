@@ -7,6 +7,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const studentInfo = document.getElementById('student-info');
     const errorInfo = document.getElementById('error-info');
     const scanningStatus = document.getElementById('scanning-status');
+    const programDropdown = document.getElementById('student-program-input');
+    
+    // Load programs from server
+    function loadPrograms() {
+        fetch('/programs')
+            .then(response => response.json())
+            .then(programs => {
+                // Clear existing options except the first placeholder
+                while (programDropdown.options.length > 1) {
+                    programDropdown.remove(1);
+                }
+                
+                // Add programs to dropdown
+                programs.forEach(program => {
+                    const option = document.createElement('option');
+                    option.value = program;
+                    option.textContent = program;
+                    programDropdown.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading programs:', error);
+            });
+    }
+    
+    // Load programs when page loads
+    loadPrograms();
     
     let codeReader;
     let selectedDeviceId;
@@ -28,6 +55,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function startScanner() {
+        // Check for Safari location permissions proactively
+        if (isSafari()) {
+            // Show a Safari-specific message in the scanning status
+            scanningStatus.innerHTML = '<div class="alert alert-warning mb-2"><strong>Safari User Detected:</strong> If you experience location issues, please ensure location services are enabled in your Safari settings.</div>';
+            scanningStatus.classList.remove('d-none');
+            
+            // Pre-check location permissions
+            if (!isSecureContext()) {
+                displayError('Safari requires HTTPS for location services. Please use Chrome or Firefox, or contact your administrator.');
+                return;
+            }
+            
+            // Try to get location permission before starting scanner
+            navigator.geolocation.getCurrentPosition(
+                () => {
+                    // Permission granted, continue with scanner
+                    startScannerProcess();
+                },
+                (error) => {
+                    // Handle permission error
+                    handleLocationError(error);
+                },
+                { timeout: 5000 }
+            );
+        } else {
+            // Non-Safari browsers can proceed normally
+            startScannerProcess();
+        }
+    }
+    
+    function startScannerProcess() {
         startButton.classList.add('d-none');
         stopButton.classList.remove('d-none');
         resultContainer.classList.remove('d-none');
@@ -62,6 +120,16 @@ document.addEventListener('DOMContentLoaded', function() {
         resultContainer.classList.add('d-none');
     }
     
+    // Check if browser is Safari
+    function isSafari() {
+        return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    }
+    
+    // Function to check if we're on HTTPS
+    function isSecureContext() {
+        return window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+    }
+    
     function processQRCode(qrData) {
         // Get student information from the form
         const studentId = document.getElementById('student-id-input').value.trim();
@@ -80,6 +148,12 @@ document.addEventListener('DOMContentLoaded', function() {
         scanningStatus.classList.remove('d-none');
         
         if (navigator.geolocation) {
+            // Safari-specific warning
+            if (isSafari() && !isSecureContext()) {
+                displayError('Safari requires HTTPS for location services. Please use Chrome or Firefox, or contact your administrator.');
+                return;
+            }
+            
             navigator.geolocation.getCurrentPosition(
                 // Success callback
                 (position) => {
@@ -153,22 +227,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to handle geolocation errors
     function handleLocationError(error) {
         let errorMessage;
+        const isSafariBrowser = isSafari();
+        
         switch(error.code) {
             case error.PERMISSION_DENIED:
-                errorMessage = 'Location permission denied. Please enable location services to verify attendance.';
+                if (isSafariBrowser) {
+                    errorMessage = 'Location permission denied. For Safari users: Please go to Settings > Safari > Privacy & Security > Location Services and enable for this website. You may need to reload the page after enabling.';
+                } else {
+                    errorMessage = 'Location permission denied. Please enable location services to verify attendance.';
+                }
                 break;
             case error.POSITION_UNAVAILABLE:
-                errorMessage = 'Location information is unavailable.';
+                errorMessage = 'Location information is unavailable. Please ensure your device has GPS enabled.';
                 break;
             case error.TIMEOUT:
-                errorMessage = 'The request to get location timed out.';
+                errorMessage = 'The request to get location timed out. Please check your internet connection and try again.';
                 break;
             case error.UNKNOWN_ERROR:
-                errorMessage = 'An unknown error occurred while getting location.';
+                if (isSafariBrowser) {
+                    errorMessage = 'An error occurred with location services. Safari users may need to enable "Precise Location" in privacy settings.';
+                } else {
+                    errorMessage = 'An unknown error occurred while getting location.';
+                }
                 break;
         }
         displayError(errorMessage);
         scanningStatus.classList.add('d-none');
+        
+        // Add a helpful note for Safari users
+        if (isSafariBrowser) {
+            const noteElement = document.createElement('p');
+            noteElement.className = 'mt-2 small text-info';
+            noteElement.innerHTML = '<strong>Safari Users:</strong> If you continue to have issues, try using Chrome or Firefox browsers which have better compatibility with location services.';
+            document.getElementById('error-message').appendChild(noteElement);
+        }
     }
     
     // Initialize scanner

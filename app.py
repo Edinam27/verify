@@ -3,8 +3,9 @@ import csv
 import qrcode
 import base64
 import math
+import io
 from io import BytesIO
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 from flask_bootstrap import Bootstrap
 from datetime import datetime
 
@@ -196,6 +197,15 @@ def generate_qr():
     
     return render_template('qr_code.html', location_name=app.config['UPSA_LOCATION'], qr_code=img_str)
 
+# Function to get all available programs
+def get_programs():
+    programs = []
+    if os.path.exists('programs.csv'):
+        with open('programs.csv', 'r') as file:
+            reader = csv.DictReader(file)
+            programs = [row['program_name'] for row in reader]
+    return programs
+
 @app.route('/admin')
 def admin():
     """Admin page to view attendance logs"""
@@ -205,13 +215,100 @@ def admin():
             reader = csv.DictReader(file)
             attendance_records = list(reader)
             
-    # Ensure all records have the coordinates field
+    # Ensure all records have the required fields
     for record in attendance_records:
         if 'coordinates' not in record:
             record['coordinates'] = 'N/A'
+        if 'program' not in record:
+            record['program'] = 'Unknown'
     
-    return render_template('admin.html', attendance_records=attendance_records)
+    # Get unique programs from attendance records
+    programs = get_programs()
+    unique_programs = set(record.get('program', 'Unknown') for record in attendance_records)
+    
+    return render_template('admin.html', attendance_records=attendance_records, programs=programs, unique_programs=unique_programs)
+
+@app.route('/download_attendance')
+def download_attendance():
+    """Download attendance records as CSV"""
+    program = request.args.get('program', '')
+    
+    if os.path.exists('attendance_log.csv'):
+        # Create a memory file for the filtered CSV
+        output = io.StringIO()
+        
+        with open('attendance_log.csv', 'r') as file:
+            # Read the CSV file
+            reader = csv.reader(file)
+            headers = next(reader)  # Get the header row
+            
+            # Create a writer with the same headers
+            writer = csv.writer(output)
+            writer.writerow(headers)  # Write headers to output
+            
+            # Process each record
+            for row in reader:
+                # Skip if row doesn't have enough columns
+                if len(row) < 4:  # At minimum need id, name, email, program
+                    continue
+                    
+                # Get program from the row (program is at index 3)
+                row_program = row[3] if len(row) > 3 else 'Unknown'
+                
+                # Filter by program if specified
+                if not program or row_program == program:
+                    writer.writerow(row)
+        
+        # Prepare the file for download
+        output.seek(0)
+        filename = f"attendance_{'all' if not program else program.replace(' ', '_')}.csv"
+        
+        return send_file(
+            io.BytesIO(output.getvalue().encode()),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+    
+    flash('No attendance records found', 'warning')
+    return redirect(url_for('admin'))
+
+@app.route('/programs')
+def programs():
+    """Get all available programs as JSON"""
+    programs = get_programs()
+    return jsonify(programs)
+
+@app.route('/add_program', methods=['POST'])
+def add_program():
+    """Add a new program to the list"""
+    program_name = request.form.get('program_name', '').strip()
+    
+    if not program_name:
+        flash('Program name cannot be empty', 'danger')
+        return redirect(url_for('admin'))
+    
+    # Check if programs.csv exists, create it if not
+    if not os.path.exists('programs.csv'):
+        with open('programs.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['program_name'])
+    
+    # Check if program already exists
+    programs = get_programs()
+    if program_name in programs:
+        flash(f'Program "{program_name}" already exists', 'warning')
+        return redirect(url_for('admin'))
+    
+    # Add the new program
+    with open('programs.csv', 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([program_name])
+    
+    flash(f'Program "{program_name}" added successfully', 'success')
+    return redirect(url_for('admin'))
 
 if __name__ == '__main__':
-    
-    app.run(host='0.0.0.0')
+    # Create upload folder if it doesn't exist
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    app.run(debug=True)

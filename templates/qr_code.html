@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPSA Auditorium Attendance QR Code</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-header upsa-header text-white text-center">
+                        <img src="{{ url_for('static', filename='img/upsa-logo.svg') }}" alt="UPSA Logo" class="upsa-logo mb-2">
+                        <h2><i class="fas fa-qrcode"></i> UPSA Auditorium Attendance</h2>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> This is the official QR code for <strong>{{ location_name }}</strong> attendance verification.
+                        </div>
+                        <div class="qr-container my-4">
+                            <div class="border p-4 bg-light text-center" style="max-width: 250px; margin: 0 auto; border: 3px solid #800020; border-radius: 10px;">
+                                {% if qr_code %}
+                                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid mb-2">
+                                {% endif %}
+                                <h3 class="mb-0">UPSA Auditorium</h3>
+                                <p class="text-muted mt-2 mb-0">Attendance QR Code</p>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-map-marker-alt"></i> <strong>Location Verification:</strong> Students must scan this QR code while physically present at the UPSA Auditorium (within 300 meters) to register attendance.
+                        </div>
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> Student ID, name, program, email, and current location will be recorded for verification purposes.</p>
+                        <div class="mt-4">
+                            <a href="{{ url_for('index') }}" class="btn upsa-btn"><i class="fas fa-home"></i> Back to Home</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

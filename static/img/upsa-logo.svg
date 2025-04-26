@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" width="300" height="150">
+  <!-- UPSA Logo - Simple SVG Version -->
+  <rect x="50" y="30" width="200" height="90" rx="10" fill="#800020" />
+  <text x="150" y="85" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#FFD700" text-anchor="middle">UPSA</text>
+  <text x="150" y="110" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">University of Professional Studies, Accra</text>
+</svg>
